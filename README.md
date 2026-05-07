@@ -48,12 +48,25 @@ chmod +x install_service.sh
 ```
 
 ### Management
-Once installed, your OS will run it automatically on startup. To manage the daemon:
+Once installed, your OS will run it automatically on startup. Because it is a system-level background service, **you can safely close your terminal** — the script will continue running forever in the background.
+
+To manage the daemon, use these commands:
 ```bash
 systemctl --user status smart-organizer  # Check if it's running
-systemctl --user stop smart-organizer    # Stop the service
-journalctl --user -u smart-organizer -f  # View real-time logs
+journalctl --user -u smart-organizer -f  # View real-time logs of files being moved
 ```
+
+### How to Revert to Manual Mode
+If you decide you don't want it running automatically forever and prefer to clean your folder manually on-demand (e.g., once a week), you can easily disable the background service:
+
+```bash
+# 1. Stop the currently running service
+systemctl --user stop smart-organizer
+
+# 2. Prevent it from starting up again automatically
+systemctl --user disable smart-organizer
+```
+Once disabled, your Downloads folder will act normally again. You can then run `python organize.py --execute` manually whenever you choose.
 
 ## 📂 Category Map
 | Category | Extensions |
