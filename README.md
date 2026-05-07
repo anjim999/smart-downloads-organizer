@@ -1,6 +1,6 @@
 # 🗂️ Smart Downloads Organizer
 
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+
 ![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Systemd](https://img.shields.io/badge/Daemon-systemd-brightgreen.svg)
 
@@ -42,9 +42,17 @@ python3 organize.py --execute
 python3 organize.py --stats
 ```
 
-### 3. Reverting the Changes
-If you decide you don't like the grouped folders and want all your files back exactly how they were, you have two options:
+### 3. Reverting the Changes (Important!)
+If you decide you don't like the grouped folders and want all your files back exactly how they were, you can easily pull them back out. 
+
+> [!WARNING]
+> **Crucial Step:** If you have the background service running, it will instantly fight you! When you pull the files out, the watcher will see them and throw them right back into the folders. **You MUST stop the watcher first.**
+
 ```bash
+# Step 1: Stop the background watcher so it doesn't fight you
+systemctl --user stop smart-organizer
+
+# Step 2: Pick your reset method
 # Option A: Soft Undo (Reads the JSON log to reverse the exact last operation)
 python3 organize.py --undo
 
@@ -73,5 +81,3 @@ The monolithic logic was structurally refactored into a scalable, multi-file des
 - `display.py` - Rich terminal UI rendering and fallback printing.
 - `config.py` - Configuration maps linking extensions to categories.
 
-## 📝 License
-MIT License - Open Source Software.
