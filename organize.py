@@ -4,17 +4,11 @@ Smart Downloads Organizer
 =========================
 Automatically organizes messy Downloads folder into categorized subfolders.
 Handles duplicates, shows a beautiful summary, and supports dry-run mode.
-
-Usage:
-    python organize.py                    # Dry run (preview only)
-    python organize.py --execute          # Actually move files
-    python organize.py --watch            # Run in background and auto-organize new files
-    python organize.py --path ~/Downloads # Custom path
-    python organize.py --undo             # Undo last organization
-    python organize.py --stats            # Show file age statistics
 """
 
 import argparse
+from pathlib import Path
+import shutil
 from core import scan_directory, execute_organization, save_undo_log, undo_organization
 from display import display_results_rich, display_results_plain, show_stats, RICH_AVAILABLE
 
@@ -31,7 +25,8 @@ def main():
 Examples:
   python organize.py                     # Preview what would happen
   python organize.py --execute           # Actually organize files
-  python organize.py --watch             # Watch for new files
+  python organize.py --watch             # Watch for new files in background
+  python organize.py --reset             # Hard reset: move all files out of folders
   python organize.py --path ~/Downloads  # Specify custom path
   python organize.py --undo              # Undo last organization
         """
@@ -39,11 +34,39 @@ Examples:
     parser.add_argument("--path", default="~/Downloads", help="Directory to organize (default: ~/Downloads)")
     parser.add_argument("--execute", action="store_true", help="Actually move files (default is dry-run)")
     parser.add_argument("--watch", action="store_true", help="Run continuously in background and auto-organize new files")
+    parser.add_argument("--reset", action="store_true", help="Hard reset: pull all files out of category folders")
     parser.add_argument("--undo", action="store_true", help="Undo the last organization")
     parser.add_argument("--stats", action="store_true", help="Show file age statistics")
     
     args = parser.parse_args()
     
+    # Handle hard reset (New Feature!)
+    if args.reset:
+        target = Path(args.path).expanduser()
+        restored = 0
+        categories = ["Documents", "Images", "Videos", "Audio", "Archives", "Code", "Spreadsheets", "Email", "Installers", "Other", "sd"]
+        for folder in target.iterdir():
+            if folder.is_dir() and folder.name in categories:
+                # Yank EVERYTHING out (files, sub-folders, hidden files)
+                for item in folder.iterdir():
+                    dest = target / item.name
+                    counter = 1
+                    while dest.exists():
+                        dest = target / f"{item.stem} ({counter}){item.suffix}"
+                        counter += 1
+                    shutil.move(str(item), str(dest))
+                    restored += 1
+                
+                # Forcefully destroy the now-empty folder
+                try:
+                    shutil.rmtree(str(folder))
+                except Exception:
+                    pass
+                    
+        print(f"✅ HARD RESET: Pulled {restored} items back to the main folder and destroyed category folders!")
+        return
+
+
     # Handle undo
     if args.undo:
         undo_organization(args.path)
@@ -105,7 +128,6 @@ Examples:
             console.print("[yellow]👆 This was a dry run. Add [bold]--execute[/bold] to actually organize files.[/]")
         else:
             print("👆 This was a dry run. Add --execute to actually organize files.")
-
 
 if __name__ == "__main__":
     main()

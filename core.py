@@ -8,11 +8,39 @@ from collections import defaultdict
 from config import EXT_TO_CATEGORY
 from utils import handle_duplicate, get_file_age_label
 
-def get_category(filename):
-    """Determine category for a file based on extension."""
+def is_image_by_signature(filepath):
+    """Check magic bytes to see if a file without an extension is an image."""
+    try:
+        with open(filepath, 'rb') as f:
+            header = f.read(12)
+            # Check JPEG
+            if header.startswith(b'\xff\xd8\xff'):
+                return True
+            # Check PNG
+            if header.startswith(b'\x89PNG\r\n\x1a\n'):
+                return True
+            # Check GIF
+            if header.startswith(b'GIF87a') or header.startswith(b'GIF89a'):
+                return True
+            # Check WebP / AVIF
+            if header.startswith(b'RIFF') and b'WEBP' in header:
+                return True
+            if header[4:8] == b'ftyp' and (b'avif' in header or b'heic' in header):
+                return True
+    except Exception:
+        pass
+    return False
+
+def get_category(filename, filepath=None):
+    """Determine category for a file based on extension or magic bytes."""
     ext = Path(filename).suffix.lower()
     if ext in EXT_TO_CATEGORY:
         return EXT_TO_CATEGORY[ext]
+        
+    # If no extension or unknown extension, check magic bytes to see if it's an image
+    if filepath and is_image_by_signature(filepath):
+        return ("🖼️ Images", "Images")
+        
     return ("📁 Other", "Other")
 
 def scan_directory(target_dir):
@@ -35,7 +63,7 @@ def scan_directory(target_dir):
             skipped.append(str(item.name))
             continue
         
-        cat_display, cat_folder = get_category(item.name)
+        cat_display, cat_folder = get_category(item.name, filepath=str(item))
         file_size = item.stat().st_size
         modified = datetime.fromtimestamp(item.stat().st_mtime)
         

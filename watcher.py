@@ -26,7 +26,7 @@ class DownloadOrganizerHandler(FileSystemEventHandler):
         if not file_path.exists():
             return
             
-        cat_display, cat_folder = get_category(file_path.name)
+        cat_display, cat_folder = get_category(file_path.name, filepath=str(file_path))
         
         dest_dir = self.target_path / cat_folder
         dest_dir.mkdir(exist_ok=True)

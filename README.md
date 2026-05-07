@@ -4,75 +4,59 @@
 ![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Systemd](https://img.shields.io/badge/Daemon-systemd-brightgreen.svg)
 
-A production-ready Python CLI tool and background daemon that automatically organizes a messy Downloads folder into categorized subfolders with duplicate-handling and an undo safety net.
+A production-ready Python CLI tool and background daemon that automatically organizes a messy Downloads folder into categorized subfolders. It features real-time background watching, intelligent duplicate-handling, an undo safety net, and a "hard reset" capability.
 
-## ✨ Features
-* **Auto-Categorization:** Scans files and moves them into predefined folders (`Documents`, `Images`, `Videos`, `Code`, `Archives`, etc.) based on their extension.
-* **Real-time Watcher:** Runs continuously in the background using `watchdog`. The exact second a file finishes downloading, it instantly routes it to the right folder.
-* **Linux Systemd Daemon:** Includes an installation script to register the tool as a Linux service so it boots invisibly with your OS.
-* **Duplicate Handling:** Automatically appends counters (e.g., `resume (1).pdf`) if a file with the same name already exists in the destination.
-* **Undo System:** Saves a JSON log of every move. Made a mistake? Run `--undo` to instantly restore all files to their original location.
-* **Modular Architecture:** Cleanly separated code (`core.py`, `utils.py`, `display.py`, `watcher.py`) making it easy to extend or write tests.
-* **Beautiful CLI:** Uses `rich` for stunning terminal tables, stats, and colored output.
+## ✨ Core Features
+* **Real-time Background Watcher:** Uses the `watchdog` library to listen to OS-level file events. The exact second a file finishes downloading, it instantly routes it to the right folder without you lifting a finger.
+* **Auto-Categorization:** Automatically scans and moves files into predefined folders (`Documents`, `Images`, `Videos`, `Code`, etc.) based on their extension.
+* **Linux Systemd Daemon:** Includes an installation bash script (`install_service.sh`) to register the tool as a system-level Linux service so it boots invisibly with your OS.
+* **Undo System:** Saves a JSON log of every manual move. Made a mistake? Run `--undo` to parse the log and restore all files to their original location.
+* **Hard Reset Capability:** A `--reset` flag that forcefully yanks every file and sub-folder back out of the category folders and restores them to the main directory, destroying the empty folders behind it.
+* **Modular Architecture:** Cleanly separated code (`core.py`, `utils.py`, `display.py`, `watcher.py`) adhering to clean code principles, making it easy to test and extend.
 
-## 🚀 Quick Start (Manual Mode)
+## 🚀 Usage Guide
 
-If you just want to run the tool once to clean up a messy folder:
+There are **three** different ways you can use this automation:
 
+### 1. Fully Automated (Best for the future)
+Instead of running it manually every week, turn it on as a background service. It will quietly run forever and instantly organize any NEW files you download.
 ```bash
-# 1. Install dependencies
-pip install watchdog rich
-
-# 2. Preview what would happen (Dry Run)
-python organize.py
-
-# 3. Actually organize files
-python organize.py --execute
-
-# 4. View statistics about file age
-python organize.py --stats
-
-# 5. Undo the last cleanup (if needed)
-python organize.py --undo
-```
-
-## ⚙️ Real-World Automation (Background Daemon)
-
-Real developers don't run scripts manually. Install this as a background service so you literally never have to think about sorting files again.
-
-### Installation (Linux)
-Run the included bash script to register the watcher as a `systemd` daemon:
-```bash
+# Install it as a system service
 chmod +x install_service.sh
 ./install_service.sh
+
+# To check if it is actively running in the background:
+systemctl --user status smart-organizer
 ```
 
-### Management
-Once installed, your OS will run it automatically on startup. Because it is a system-level background service, **you can safely close your terminal** — the script will continue running forever in the background.
-
-To manage the daemon, use these commands:
+### 2. Manual Cleanup (Best for existing messes)
+If you already have a messy folder with 100+ files, the watcher won't touch them (it only looks for new files). You must run the execute command once to clean up the past.
 ```bash
-systemctl --user status smart-organizer  # Check if it's running
-journalctl --user -u smart-organizer -f  # View real-time logs of files being moved
+# Preview what it will do before touching any data (Dry Run)
+python3 organize.py
+
+# Actually organize all existing files right now
+python3 organize.py --execute
+
+# Generate statistical metrics on file ages
+python3 organize.py --stats
 ```
 
-### How to Revert to Manual Mode
-If you decide you don't want it running automatically forever and prefer to clean your folder manually on-demand (e.g., once a week), you can easily disable the background service:
-
+### 3. Reverting the Changes
+If you decide you don't like the grouped folders and want all your files back exactly how they were, you have two options:
 ```bash
-# 1. Stop the currently running service
-systemctl --user stop smart-organizer
+# Option A: Soft Undo (Reads the JSON log to reverse the exact last operation)
+python3 organize.py --undo
 
-# 2. Prevent it from starting up again automatically
-systemctl --user disable smart-organizer
+# Option B: Hard Reset (Forcefully pulls all files back into the main folder and deletes category folders)
+python3 organize.py --reset
 ```
-Once disabled, your Downloads folder will act normally again. You can then run `python organize.py --execute` manually whenever you choose.
 
-## 📂 Category Map
-| Category | Extensions |
+## 📂 Category Mappings
+| Category | Supported Extensions |
 |----------|-----------|
 | 📄 Documents | `.pdf`, `.doc`, `.docx`, `.txt`, `.md`, `.rtf`, `.tex` |
-| 🖼️ Images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.webp`, `.ico` |
+| 🖼️ Images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.webp`, `.ico`, `.jfif`, `.avif`, `.heic` |
 | 🎥 Videos | `.mp4`, `.mkv`, `.avi`, `.webm`, `.mov`, `.flv` |
 | 🎵 Audio | `.mp3`, `.wav`, `.flac`, `.aac`, `.m4a` |
 | 📦 Archives | `.zip`, `.tar`, `.gz`, `.deb`, `.rar`, `.7z` |
@@ -80,8 +64,8 @@ Once disabled, your Downloads folder will act normally again. You can then run `
 | 📊 Spreadsheets| `.csv`, `.xls`, `.xlsx`, `.ods` |
 | 🔧 Installers | `.exe`, `.dmg`, `.appimage`, `.snap` |
 
-## 🛠️ Architecture
-The monolithic logic was structurally refactored into a scalable design:
+## 🛠️ System Architecture
+The monolithic logic was structurally refactored into a scalable, multi-file design:
 - `organize.py` - Main CLI entrypoint and argument parser.
 - `core.py` - Core execution logic for scanning, moving, and undoing.
 - `watcher.py` - FileSystem event handlers bridging `watchdog` to the core logic.
@@ -90,4 +74,4 @@ The monolithic logic was structurally refactored into a scalable design:
 - `config.py` - Configuration maps linking extensions to categories.
 
 ## 📝 License
-MIT License - Feel free to fork and modify!
+MIT License - Open Source Software.

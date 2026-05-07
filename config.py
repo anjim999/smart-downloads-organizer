@@ -4,7 +4,7 @@ CATEGORIES = {
         "folder": "Documents"
     },
     "🖼️ Images": {
-        "extensions": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".svg", ".webp", ".ico", ".tiff"],
+        "extensions": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".svg", ".webp", ".ico", ".tiff", ".jfif", ".avif", ".heic"],
         "folder": "Images"
     },
     "🎥 Videos": {
